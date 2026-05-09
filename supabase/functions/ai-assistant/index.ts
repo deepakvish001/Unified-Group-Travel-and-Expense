@@ -75,6 +75,8 @@ function buildItineraryPrompt(input: TripGenerationInput): string {
     return d.toISOString().split("T")[0];
   });
 
+  const activitySchema = `{"time": "HH:MM AM/PM", "title": "string", "description": "string", "duration": "string", "estimatedCost": number, "costPerPerson": number, "category": "activity|food|transport|sightseeing", "reason": "string"}`;
+
   return `You are an expert travel planner. Generate a detailed ${input.duration}-day trip itinerary for ${input.destination} for ${input.memberCount} people with a total budget of ${input.currency} ${input.budget}.
 
 Trip Details:
@@ -92,52 +94,41 @@ Trip Details:
 - Pace: ${input.pace || "moderate"}
 - Dates: ${days.join(", ")}
 
-Return ONLY a valid JSON object with this exact structure (no markdown, no explanation):
+CRITICAL: Return ONLY a raw valid JSON object. No markdown. No code blocks. No explanation. No trailing commas. No comments. Just pure JSON.
+
+The JSON must follow this schema exactly:
 {
-  "destination": "${input.destination}",
-  "duration": ${input.duration},
-  "totalBudget": ${input.budget},
-  "estimatedTotal": <number>,
-  "currency": "${input.currency}",
+  "destination": "string",
+  "duration": number,
+  "totalBudget": number,
+  "estimatedTotal": number,
+  "currency": "string",
   "days": [
     {
-      "day": 1,
-      "date": "${days[0]}",
-      "morning": [
-        {
-          "time": "9:00 AM",
-          "title": "Activity name",
-          "description": "Brief description",
-          "duration": "2 hours",
-          "estimatedCost": <total for group>,
-          "costPerPerson": <per person>,
-          "category": "activity|food|transport|sightseeing",
-          "reason": "Why this is great for the group"
-        }
-      ],
-      "afternoon": [...],
-      "evening": [...],
-      "dayTotal": <number>
+      "day": number,
+      "date": "YYYY-MM-DD",
+      "morning": [${activitySchema}],
+      "afternoon": [${activitySchema}],
+      "evening": [${activitySchema}],
+      "dayTotal": number
     }
   ],
   "budgetBreakdown": {
-    "accommodation": <number>,
-    "food": <number>,
-    "activities": <number>,
-    "transport": <number>
+    "accommodation": number,
+    "food": number,
+    "activities": number,
+    "transport": number
   },
   "hotelSuggestions": [
-    { "name": "Hotel name", "pricePerNight": <number>, "description": "Brief description" }
+    {"name": "string", "pricePerNight": number, "description": "string"}
   ],
   "transportSuggestions": [
-    { "type": "Flight/Train/Bus", "description": "Details", "cost": <number> }
+    {"type": "string", "description": "string", "cost": number}
   ],
-  "aiInsights": [
-    "Practical tip 1",
-    "Practical tip 2",
-    "Practical tip 3"
-  ]
-}`;
+  "aiInsights": ["string", "string", "string"]
+}
+
+Generate all ${input.duration} days. Each day must have at least 1 activity in morning, afternoon, and evening arrays. All arrays must contain real objects, never use "..." or placeholders.`;
 }
 
 function buildActivityPrompt(input: ActivityRecommendationInput): string {
