@@ -47,24 +47,26 @@ interface ItineraryAnalysisInput {
   currency: string;
 }
 
-async function callGroq(prompt: string, apiKey: string): Promise<string> {
-  const url = `https://api.groq.com/openai/v1/chat/completions`;
+async function callGemini(prompt: string, apiKey: string): Promise<string> {
+  const model = "gemini-flash-lite-latest";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "openai/gpt-oss-20b",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_tokens: 8192,
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 8192,
+      },
     }),
   });
-  if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini API error: ${res.status} - ${errText}`);
+  }
   const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
 function buildItineraryPrompt(input: TripGenerationInput): string {
@@ -246,7 +248,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const apiKey = Deno.env.get("GROQ_API_KEY") ?? "";
+    const apiKey = Deno.env.get("GEMINI_API_KEY") ?? "";
     const url = new URL(req.url);
     const action = url.pathname.split("/").pop();
 
@@ -258,25 +260,25 @@ Deno.serve(async (req: Request) => {
       if (!apiKey) throw new Error("AI service not configured");
       const input = body as TripGenerationInput;
       const prompt = buildItineraryPrompt(input);
-      const raw = await callGroq(prompt, apiKey);
+      const raw = await callGemini(prompt, apiKey);
       result = extractJSON(raw);
     } else if (action === "activity-recommendations") {
       if (!apiKey) throw new Error("AI service not configured");
       const input = body as ActivityRecommendationInput;
       const prompt = buildActivityPrompt(input);
-      const raw = await callGroq(prompt, apiKey);
+      const raw = await callGemini(prompt, apiKey);
       result = extractJSON(raw);
     } else if (action === "analyze-itinerary") {
       if (!apiKey) throw new Error("AI service not configured");
       const input = body as ItineraryAnalysisInput;
       const prompt = buildItineraryAnalysisPrompt(input);
-      const raw = await callGroq(prompt, apiKey);
+      const raw = await callGemini(prompt, apiKey);
       result = extractJSON(raw);
     } else if (action === "travel-insights") {
       if (!apiKey) throw new Error("AI service not configured");
       const { destination, month, groupSize, budget, currency } = body;
       const prompt = buildInsightsPrompt(destination, month, groupSize, budget, currency);
-      const raw = await callGroq(prompt, apiKey);
+      const raw = await callGemini(prompt, apiKey);
       result = extractJSON(raw);
     } else {
       return new Response(JSON.stringify({ error: "Unknown action" }), {
