@@ -59,7 +59,7 @@ async function callGroq(prompt: string, apiKey: string): Promise<string> {
       model: "openai/gpt-oss-20b",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
-      max_tokens: 4096,
+      max_tokens: 8192,
     }),
   });
   if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
@@ -198,11 +198,46 @@ Return ONLY valid JSON array (no markdown):
 ]`;
 }
 
+function repairJSON(text: string): string {
+  // Remove trailing commas before closing brackets/braces
+  let s = text.replace(/,\s*([\]}])/g, "$1");
+
+  // Close any unclosed strings first
+  const quoteCount = (s.match(/(?<!\\)"/g) || []).length;
+  if (quoteCount % 2 !== 0) s += '"';
+
+  // Close unclosed brackets and braces in order
+  const stack: string[] = [];
+  let inString = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '"' && s[i - 1] !== "\\") inString = !inString;
+    if (inString) continue;
+    if (c === "{") stack.push("}");
+    else if (c === "[") stack.push("]");
+    else if (c === "}" || c === "]") stack.pop();
+  }
+  return s + stack.reverse().join("");
+}
+
 function extractJSON(text: string): unknown {
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) ||
-    text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-  const raw = jsonMatch ? (jsonMatch[1] || jsonMatch[0]).trim() : text.trim();
-  return JSON.parse(raw);
+  const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  let raw = codeBlock ? codeBlock[1].trim() : text.trim();
+
+  // Extract first JSON object or array
+  const firstBrace = raw.indexOf("{");
+  const firstBracket = raw.indexOf("[");
+  const start = firstBrace === -1 ? firstBracket
+    : firstBracket === -1 ? firstBrace
+    : Math.min(firstBrace, firstBracket);
+  if (start > 0) raw = raw.slice(start);
+
+  // Try direct parse first, then repair
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return JSON.parse(repairJSON(raw));
+  }
 }
 
 Deno.serve(async (req: Request) => {
