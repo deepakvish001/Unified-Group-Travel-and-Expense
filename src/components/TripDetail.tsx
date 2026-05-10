@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Calendar, MapPin, Users, Wallet, Map, Plane, Sparkles, MessageCircle, Kanban, Vote, Activity, Crown } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Wallet, Map, Plane, Sparkles, MessageCircle, Kanban, Vote, Activity, Crown, Navigation } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { Trip, TripMember, Profile, Expense } from '../lib/types';
@@ -9,6 +9,7 @@ import { AIPanel } from './panels/AIPanel';
 import { ChatPanel } from './panels/ChatPanel';
 import { MembersPanel } from './panels/MembersPanel';
 import { PlanPanel } from './panels/PlanPanel';
+import { ReservationsPanel } from './panels/ReservationsPanel';
 import { DayItinerary } from './module2/DayItinerary';
 import { KanbanBoard } from './module2/KanbanBoard';
 import { TripPolls } from './module2/TripPolls';
@@ -16,8 +17,8 @@ import { TripTimeline } from './module2/TripTimeline';
 import { PresenceBar } from './module6/PresenceBar';
 import { LiveActivityFeed } from './module6/LiveActivityFeed';
 
-// ADDED: Plan tab for PRO/ENTERPRISE tier features
-type Tab = 'itinerary' | 'tasks' | 'polls' | 'timeline' | 'bookings' | 'expenses' | 'ai' | 'chat' | 'plan';
+// ADDED: Plan tab for PRO/ENTERPRISE tier features + Reservations tab
+type Tab = 'itinerary' | 'tasks' | 'polls' | 'timeline' | 'bookings' | 'expenses' | 'ai' | 'chat' | 'plan' | 'reservations';
 
 type Props = {
   tripId: string;
@@ -101,10 +102,11 @@ export function TripDetail({ tripId, onBack }: Props) {
     { id: 'polls', label: 'Polls', icon: Vote },
     { id: 'timeline', label: 'Timeline', icon: Activity },
     { id: 'bookings', label: 'Bookings', icon: Plane },
+    // ADDED: Reservations tab for nearby services discovery
+    { id: 'reservations', label: 'Services', icon: Navigation },
     { id: 'expenses', label: 'Expenses', icon: Wallet },
     { id: 'ai', label: 'AI', icon: Sparkles },
     { id: 'chat', label: 'Chat', icon: MessageCircle },
-    // ADDED: Plan tab for PRO/ENTERPRISE tier features
     { id: 'plan', label: 'Plan', icon: Crown },
   ];
 
@@ -193,6 +195,8 @@ export function TripDetail({ tripId, onBack }: Props) {
           </div>
         )}
         {tab === 'bookings' && <BookingHub tripId={tripId} trip={trip} members={members} />}
+        {/* ADDED: Reservations Panel - Nearby services discovery & reservations */}
+        {tab === 'reservations' && <ReservationsPanel tripId={tripId} />}
         {tab === 'expenses' && <ExpenseHub tripId={tripId} trip={trip} members={members} />}
         {tab === 'ai' && <AIPanel tripId={tripId} trip={trip} onApplied={load} />}
         {tab === 'chat' && <ChatPanel tripId={tripId} />}
