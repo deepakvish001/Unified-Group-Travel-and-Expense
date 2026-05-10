@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Calendar, MapPin, Users, Wallet, Map, Plane, Sparkles, MessageCircle, Kanban, Vote, Activity } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Wallet, Map, Plane, Sparkles, MessageCircle, Kanban, Vote, Activity, Crown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { Trip, TripMember, Profile, Expense } from '../lib/types';
@@ -8,6 +8,7 @@ import { ExpenseHub } from './module3/ExpenseHub';
 import { AIPanel } from './panels/AIPanel';
 import { ChatPanel } from './panels/ChatPanel';
 import { MembersPanel } from './panels/MembersPanel';
+import { PlanPanel } from './panels/PlanPanel';
 import { DayItinerary } from './module2/DayItinerary';
 import { KanbanBoard } from './module2/KanbanBoard';
 import { TripPolls } from './module2/TripPolls';
@@ -15,7 +16,8 @@ import { TripTimeline } from './module2/TripTimeline';
 import { PresenceBar } from './module6/PresenceBar';
 import { LiveActivityFeed } from './module6/LiveActivityFeed';
 
-type Tab = 'itinerary' | 'tasks' | 'polls' | 'timeline' | 'bookings' | 'expenses' | 'ai' | 'chat';
+// ADDED: Plan tab for PRO/ENTERPRISE tier features
+type Tab = 'itinerary' | 'tasks' | 'polls' | 'timeline' | 'bookings' | 'expenses' | 'ai' | 'chat' | 'plan';
 
 type Props = {
   tripId: string;
@@ -26,6 +28,7 @@ export function TripDetail({ tripId, onBack }: Props) {
   const { user } = useAuth();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [members, setMembers] = useState<(TripMember & { profile: Profile })[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [spent, setSpent] = useState(0);
   const [tab, setTab] = useState<Tab>('itinerary');
   const [loading, setLoading] = useState(true);
@@ -47,8 +50,10 @@ export function TripDetail({ tripId, onBack }: Props) {
       } else {
         setMembers([]);
       }
-      const { data: exps } = await supabase.from('expenses').select('amount').eq('trip_id', tripId);
-      setSpent((exps ?? []).reduce((s, e: Pick<Expense, 'amount'>) => s + Number(e.amount), 0));
+      const { data: exps } = await supabase.from('expenses').select('*').eq('trip_id', tripId);
+      const expsList = (exps ?? []) as Expense[];
+      setExpenses(expsList);
+      setSpent(expsList.reduce((s, e) => s + Number(e.amount), 0));
     } catch (e) {
       console.error('trip load failed', e);
     } finally {
@@ -99,6 +104,8 @@ export function TripDetail({ tripId, onBack }: Props) {
     { id: 'expenses', label: 'Expenses', icon: Wallet },
     { id: 'ai', label: 'AI', icon: Sparkles },
     { id: 'chat', label: 'Chat', icon: MessageCircle },
+    // ADDED: Plan tab for PRO/ENTERPRISE tier features
+    { id: 'plan', label: 'Plan', icon: Crown },
   ];
 
   const fmt = (d: string | null) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
@@ -189,6 +196,16 @@ export function TripDetail({ tripId, onBack }: Props) {
         {tab === 'expenses' && <ExpenseHub tripId={tripId} trip={trip} members={members} />}
         {tab === 'ai' && <AIPanel tripId={tripId} trip={trip} onApplied={load} />}
         {tab === 'chat' && <ChatPanel tripId={tripId} />}
+        {/* ADDED: Plan Panel - PRO/ENTERPRISE tier features */}
+        {tab === 'plan' && user && (
+          <PlanPanel
+            tripId={tripId}
+            trip={trip}
+            members={members}
+            expenses={expenses}
+            currentUserId={user.id}
+          />
+        )}
       </div>
 
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-stone-200 overflow-x-auto">

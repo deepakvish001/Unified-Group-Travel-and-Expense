@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+// ADDED: Subscription tier context
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { Landing } from './components/Landing';
 import { Auth } from './components/Auth';
 import { Dashboard } from './components/Dashboard';
@@ -65,7 +67,16 @@ function Root() {
 }
 
 function App() {
-  return <ThemeProvider><AuthProvider><Root /></AuthProvider></ThemeProvider>;
+  // ADDED: SubscriptionProvider wraps app for tier-gated features
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <SubscriptionProvider>
+          <Root />
+        </SubscriptionProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
 }
 
 export default App;
