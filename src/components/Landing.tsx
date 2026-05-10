@@ -21,16 +21,15 @@ export function Landing({ onGetStarted, onSignIn }: Props) {
     <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-stone-50'}`}>
       <nav className={`fixed top-0 inset-x-0 z-50 backdrop-blur-lg transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900/80 border-slate-700/60' : 'bg-stone-50/80 border-stone-200/60'} border-b`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-teal-900 flex items-center justify-center">
+          <a href="#" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex items-center gap-2 group">
+            <div className="w-9 h-9 rounded-xl bg-teal-900 flex items-center justify-center group-hover:scale-105 transition-transform">
               <Compass className="w-5 h-5 text-amber-300" />
             </div>
-            <span className="font-display text-xl font-bold text-teal-950">Wayfare</span>
-          </div>
+            <span className="font-display text-xl font-bold text-teal-950 group-hover:text-teal-800 transition-colors">Wayfare</span>
+          </a>
           <div className={`hidden md:flex items-center gap-8 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-stone-700'}`}>
             <a href="#features" className="hover:text-teal-400 transition">Features</a>
             <a href="#how" className="hover:text-teal-400 transition">How it works</a>
-            <a href="#pricing" className="hover:text-teal-400 transition">Pricing</a>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={toggleTheme} className={`p-2 rounded-lg transition ${theme === 'dark' ? 'text-amber-400 hover:bg-slate-700' : 'text-stone-500 hover:bg-stone-100'}`} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
@@ -89,11 +88,11 @@ export function Landing({ onGetStarted, onSignIn }: Props) {
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className={`rounded-lg p-2 ${theme === 'dark' ? 'bg-slate-700' : 'bg-stone-50'}`}>
                     <div className={`text-[10px] uppercase tracking-wide ${theme === 'dark' ? 'text-slate-400' : 'text-stone-500'}`}>Budget</div>
-                    <div className={`text-sm font-semibold ${theme === 'dark' ? 'text-teal-400' : 'text-teal-900'}`}>$3,240</div>
+                    <div className={`text-sm font-semibold ${theme === 'dark' ? 'text-teal-400' : 'text-teal-900'}`}>3,240</div>
                   </div>
                   <div className={`rounded-lg p-2 ${theme === 'dark' ? 'bg-slate-700' : 'bg-stone-50'}`}>
                     <div className={`text-[10px] uppercase tracking-wide ${theme === 'dark' ? 'text-slate-400' : 'text-stone-500'}`}>Spent</div>
-                    <div className={`text-sm font-semibold ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>$1,802</div>
+                    <div className={`text-sm font-semibold ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>1,802</div>
                   </div>
                   <div className={`rounded-lg p-2 ${theme === 'dark' ? 'bg-slate-700' : 'bg-stone-50'}`}>
                     <div className={`text-[10px] uppercase tracking-wide ${theme === 'dark' ? 'text-slate-400' : 'text-stone-500'}`}>Days</div>
@@ -146,17 +145,6 @@ export function Landing({ onGetStarted, onSignIn }: Props) {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section id="pricing" className={`py-24 px-6 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-800' : 'bg-stone-50'}`}>
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className={`font-display text-4xl md:text-5xl font-bold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-teal-950'}`}>Ready when you are.</h2>
-          <p className={`text-lg mb-10 ${theme === 'dark' ? 'text-slate-400' : 'text-stone-600'}`}>Start planning with your group — no credit card, no hidden fees.</p>
-          <button onClick={onGetStarted} className="group inline-flex items-center gap-2 bg-teal-900 text-stone-50 px-8 py-4 rounded-full font-medium hover:bg-teal-800 transition">
-            Create your first trip
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition" />
-          </button>
         </div>
       </section>
 

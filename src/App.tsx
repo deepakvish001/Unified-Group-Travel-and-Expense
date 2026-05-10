@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 // ADDED: Subscription tier context
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import { Landing } from './components/Landing';
 import { Auth } from './components/Auth';
 import { Dashboard } from './components/Dashboard';
@@ -72,7 +73,9 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <SubscriptionProvider>
-          <Root />
+          <CurrencyProvider>
+            <Root />
+          </CurrencyProvider>
         </SubscriptionProvider>
       </AuthProvider>
     </ThemeProvider>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Plus, Compass, LogOut, Calendar, MapPin, Users, Moon, Sun } from 'lucide-react';
+import { Plus, Compass, LogOut, Calendar, MapPin, Users, Moon, Sun, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { supabase } from '../lib/supabase';
 import type { Trip } from '../lib/types';
 import { NewTripModal } from './NewTripModal';
@@ -44,12 +45,12 @@ export function Dashboard({ onOpenTrip }: Props) {
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-slate-900' : 'bg-stone-50'} transition-colors duration-300`}>
       <nav className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-stone-200'} border-b sticky top-0 z-40 transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-teal-900 flex items-center justify-center">
+          <a href="#" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex items-center gap-2 group">
+            <div className="w-9 h-9 rounded-xl bg-teal-900 flex items-center justify-center group-hover:scale-105 transition-transform">
               <Compass className="w-5 h-5 text-amber-300" />
             </div>
-            <span className="font-display text-xl font-bold text-teal-950">Wayfare</span>
-          </div>
+            <span className="font-display text-xl font-bold text-teal-950 group-hover:text-teal-800 transition-colors">Wayfare</span>
+          </a>
           <div className="flex items-center gap-3">
             <NotificationCenter />
             <button onClick={toggleTheme} className={`p-2 rounded-lg transition ${theme === 'dark' ? 'text-amber-400 hover:bg-slate-700' : 'text-stone-500 hover:bg-stone-100'}`} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
@@ -100,8 +101,8 @@ export function Dashboard({ onOpenTrip }: Props) {
           <EmptyState onCreate={() => setShowNew(true)} />
         ) : (
           <div className="space-y-12">
-            <TripSection title="Upcoming & Active" trips={upcoming} onOpen={onOpenTrip} />
-            {past.length > 0 && <TripSection title="Past Trips" trips={past} onOpen={onOpenTrip} />}
+            <TripSection title="Upcoming & Active" trips={upcoming} onOpen={onOpenTrip} onDelete={load} />
+            {past.length > 0 && <TripSection title="Past Trips" trips={past} onOpen={onOpenTrip} onDelete={load} />}
           </div>
         )}
       </main>
@@ -117,26 +118,38 @@ export function Dashboard({ onOpenTrip }: Props) {
   );
 }
 
-function TripSection({ title, trips, onOpen }: { title: string; trips: Trip[]; onOpen: (id: string) => void }) {
+function TripSection({ title, trips, onOpen, onDelete }: { title: string; trips: Trip[]; onOpen: (id: string) => void; onDelete: () => void }) {
   const { theme } = useTheme();
   if (trips.length === 0) return null;
   return (
     <section>
       <h2 className={`font-display text-2xl font-semibold mb-5 ${theme === 'dark' ? 'text-slate-100' : 'text-teal-950'}`}>{title}</h2>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {trips.map((t) => <TripCard key={t.id} trip={t} onOpen={() => onOpen(t.id)} />)}
+        {trips.map((t) => <TripCard key={t.id} trip={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete()} />)}
       </div>
     </section>
   );
 }
 
-function TripCard({ trip, onOpen }: { trip: Trip; onOpen: () => void }) {
+function TripCard({ trip, onOpen, onDelete }: { trip: Trip; onOpen: () => void; onDelete: () => void }) {
   const { theme } = useTheme();
+  const { format: fmtCurrency } = useCurrency();
+  const [deleting, setDeleting] = useState(false);
   const fmt = (d: string | null) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Delete "${trip.name}"? This cannot be undone.`)) return;
+    setDeleting(true);
+    await supabase.rpc('delete_trip', { p_trip_id: trip.id });
+    setDeleting(false);
+    onDelete();
+  };
+
   return (
-    <button
+    <div
       onClick={onOpen}
-      className={`group text-left rounded-2xl overflow-hidden border hover:shadow-xl hover:-translate-y-0.5 transition-all ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-stone-200'}`}
+      className={`group text-left rounded-2xl overflow-hidden border hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-stone-200'}`}
     >
       <div className="relative h-44 overflow-hidden">
         <img src={trip.cover_url || 'https://images.pexels.com/photos/2356059/pexels-photo-2356059.jpeg?auto=compress&cs=tinysrgb&w=800'} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -145,6 +158,14 @@ function TripCard({ trip, onOpen }: { trip: Trip; onOpen: () => void }) {
             {trip.status}
           </span>
         </div>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-stone-400 hover:text-red-600 hover:bg-white transition opacity-0 group-hover:opacity-100 disabled:opacity-40"
+          title="Delete trip"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
       <div className="p-5">
         <h3 className={`font-display text-xl font-bold mb-1 truncate ${theme === 'dark' ? 'text-slate-100' : 'text-teal-950'}`}>{trip.name}</h3>
@@ -153,10 +174,10 @@ function TripCard({ trip, onOpen }: { trip: Trip; onOpen: () => void }) {
         </div>
         <div className={`flex items-center justify-between text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-stone-500'}`}>
           <div className="inline-flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {fmt(trip.start_date)} – {fmt(trip.end_date)}</div>
-          <div className={`inline-flex items-center gap-1 font-medium ${theme === 'dark' ? 'text-amber-400' : 'text-teal-900'}`}>{trip.currency} {Number(trip.budget).toLocaleString()}</div>
+          <div className={`inline-flex items-center gap-1 font-medium ${theme === 'dark' ? 'text-amber-400' : 'text-teal-900'}`}>{fmtCurrency(Number(trip.budget), trip.currency)}</div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -170,7 +191,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <h3 className={`font-display text-2xl font-bold mb-2 ${theme === 'dark' ? 'text-slate-100' : 'text-teal-950'}`}>No trips yet</h3>
       <p className={`mb-6 max-w-md mx-auto ${theme === 'dark' ? 'text-slate-400' : 'text-stone-600'}`}>Create your first trip, invite your group and start planning together.</p>
       <button onClick={onCreate} className="inline-flex items-center gap-2 bg-teal-900 text-stone-50 px-5 py-3 rounded-full font-medium hover:bg-teal-800 transition">
-        <Plus className="w-4 h-4" /> Create a trip
+        <Plus className="w-4 h-4" /> New trip
       </button>
     </div>
   );

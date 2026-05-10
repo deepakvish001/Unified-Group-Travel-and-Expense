@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Heart, Calendar, MapPin, Clock, Loader2, BookmarkX, Trash2, Share2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 interface SavedService {
   id: string;
@@ -62,6 +63,7 @@ const CATEGORY_ICONS = {
 
 export function SavedReservations({ tripId }: Props) {
   const { user } = useAuth();
+  const { format: fmt } = useCurrency();
   const [tab, setTab] = useState<'saved' | 'reservations'>('saved');
   const [savedServices, setSavedServices] = useState<SavedService[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -225,7 +227,7 @@ export function SavedReservations({ tripId }: Props) {
                     )}
                     {item.service.estimated_cost && (
                       <span className="text-xs font-bold text-teal-700">
-                        ₹{item.service.estimated_cost.toLocaleString()}
+                        {fmt(item.service.estimated_cost)}
                       </span>
                     )}
                   </div>
@@ -304,7 +306,7 @@ export function SavedReservations({ tripId }: Props) {
                       )}
                       {res.total_cost && (
                         <span className="font-bold text-teal-700">
-                          ₹{res.total_cost.toLocaleString()}
+                          {fmt(res.total_cost)}
                         </span>
                       )}
                     </div>

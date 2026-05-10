@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Calendar, MapPin, Users, Wallet, Map, Plane, Sparkles, MessageCircle, Kanban, Vote, Activity, Crown, Navigation } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import type { Trip, TripMember, Profile, Expense } from '../lib/types';
 import { BookingHub } from './module4/BookingHub';
 import { ExpenseHub } from './module3/ExpenseHub';
@@ -27,6 +28,7 @@ type Props = {
 
 export function TripDetail({ tripId, onBack }: Props) {
   const { user } = useAuth();
+  const { format: fmtCurrency } = useCurrency();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [members, setMembers] = useState<(TripMember & { profile: Profile })[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -138,8 +140,8 @@ export function TripDetail({ tripId, onBack }: Props) {
                 {budget > 0 && (
                   <div className="mt-3 max-w-sm">
                     <div className="flex items-center justify-between text-xs text-stone-200 mb-1">
-                      <span>{trip.currency} {spent.toLocaleString()} spent</span>
-                      <span className={over ? 'text-red-300 font-semibold' : 'text-amber-200'}>of {trip.currency} {budget.toLocaleString()}</span>
+                      <span>{fmtCurrency(spent, trip.currency)} spent</span>
+                      <span className={over ? 'text-red-300 font-semibold' : 'text-amber-200'}>of {fmtCurrency(budget, trip.currency)}</span>
                     </div>
                     <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full transition-all ${over ? 'bg-red-400' : 'bg-amber-300'}`} style={{ width: `${pct}%` }} />

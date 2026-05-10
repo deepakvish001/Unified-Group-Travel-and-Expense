@@ -1,4 +1,5 @@
 import type { Expense, ExpenseSplit, TripMember, Profile } from '../../lib/types';
+import { getCurrencySymbol } from '../../contexts/CurrencyContext';
 
 export type MemberRow = TripMember & { profile: Profile };
 
@@ -47,7 +48,7 @@ export function optimizeSettlements(bal: Balances): Settlement[] {
 }
 
 export function formatCurrency(amount: number, currency: string): string {
-  const sym = currency === 'INR' ? '\u20B9' : currency === 'USD' ? '$' : currency === 'EUR' ? '\u20AC' : currency === 'GBP' ? '\u00A3' : currency + ' ';
+  const sym = getCurrencySymbol(currency);
   return `${sym}${Number(amount).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 

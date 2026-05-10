@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Send, Pin, Reply, Smile, AtSign, X, MessageSquare } from 'lucide-react';
+import { Send, Pin, Reply, Smile, AtSign, X, MessageSquare, ImagePlus, Film, XCircle, Upload } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Message, Profile, MessageReaction } from '../../lib/types';
@@ -7,6 +7,10 @@ import type { Message, Profile, MessageReaction } from '../../lib/types';
 type EnrichedMessage = Message & { profile?: Profile; reactions?: MessageReaction[]; replyMsg?: Message & { profile?: Profile } };
 
 const EMOJIS = ['👍', '❤️', '😂', '🙌', '🔥', '😮', '😢', '👀'];
+const MAX_MEDIA_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_IMAGE = 'image/jpeg,image/png,image/gif,image/webp';
+const ACCEPTED_VIDEO = 'video/mp4,video/webm,video/quicktime';
+const ACCEPTED_ALL = `${ACCEPTED_IMAGE},${ACCEPTED_VIDEO}`;
 
 function timeLabel(ts: string): string {
   return new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -21,6 +25,10 @@ function dateLabel(ts: string): string {
   return new Date(ts).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
+function isVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|mov)(\?|$)/i.test(url) || url.includes('video');
+}
+
 export function ChatPanel({ tripId }: { tripId: string }) {
   const { user, profile } = useAuth();
   const [messages, setMessages] = useState<EnrichedMessage[]>([]);
@@ -32,8 +40,14 @@ export function ChatPanel({ tripId }: { tripId: string }) {
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
   const [pinned, setPinned] = useState<EnrichedMessage[]>([]);
   const [showPinned, setShowPinned] = useState(false);
+  const [pendingMedia, setPendingMedia] = useState<{ url: string; type: 'image' | 'video'; name: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const buildMessages = useCallback((raw: Message[], profMap: Record<string, Profile>, rxMap: Record<string, MessageReaction[]>, rawAll?: Message[]): EnrichedMessage[] => {
     return raw.map(m => ({
@@ -71,7 +85,6 @@ export function ChatPanel({ tripId }: { tripId: string }) {
 
   useEffect(() => { load(); }, [tripId]);
 
-  // Real-time new messages
   useEffect(() => {
     const ch = supabase.channel(`chat:${tripId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `trip_id=eq.${tripId}` }, async (payload) => {
@@ -86,11 +99,7 @@ export function ChatPanel({ tripId }: { tripId: string }) {
           return [...prev, { ...nm, profile: prof, reactions: [], replyMsg: nm.reply_to ? all.find(m => m.id === nm.reply_to) : undefined }];
         });
       })
-      // Reaction changes
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions' }, () => {
-        load();
-      })
-      // Presence / typing via broadcast
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions' }, () => { load(); })
       .on('broadcast', { event: 'typing' }, (payload) => {
         const uid = payload.payload?.user_id as string | undefined;
         if (!uid || uid === user?.id) return;
@@ -116,23 +125,101 @@ export function ChatPanel({ tripId }: { tripId: string }) {
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
   };
 
+  // Media file handling
+  const processFiles = (files: FileList | File[]) => {
+    const arr = Array.from(files);
+    for (const f of arr) {
+      if (f.size > MAX_MEDIA_SIZE) continue;
+      const isImg = f.type.startsWith('image/');
+      const isVid = f.type.startsWith('video/');
+      if (!isImg && !isVid) continue;
+      const url = URL.createObjectURL(f);
+      setPendingMedia(prev => [...prev, { url, type: isImg ? 'image' : 'video', name: f.name }]);
+    }
+  };
+
+  const removePending = (idx: number) => {
+    setPendingMedia(prev => {
+      const item = prev[idx];
+      if (item) URL.revokeObjectURL(item.url);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
+
+  const uploadMedia = async (files: File[]): Promise<string[]> => {
+    if (!user) return [];
+    const urls: string[] = [];
+    setUploading(true);
+    setUploadProgress(0);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const ext = file.name.split('.').pop();
+      const path = `chat/${tripId}/${user.id}/${Date.now()}-${i}.${ext}`;
+      const { error } = await supabase.storage.from('media').upload(path, file, { upsert: true });
+      if (!error) {
+        const { data: urlData } = supabase.storage.from('media').getPublicUrl(path);
+        urls.push(urlData.publicUrl);
+      }
+      setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+    }
+    setUploading(false);
+    setUploadProgress(0);
+    return urls;
+  };
+
+  // Drag & drop
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragOver(true); };
+  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setDragOver(false); };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files.length) processFiles(e.dataTransfer.files);
+  };
+
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || !user) return;
+    if (!user) return;
+    if (!text.trim() && pendingMedia.length === 0) return;
+
+    let mediaUrls: string[] = [];
+
+    // Upload pending media files
+    if (pendingMedia.length > 0) {
+      // Re-read files from object URLs and convert to File objects
+      setUploading(true);
+      const files: File[] = [];
+      // We'll use a different approach: store files alongside previews
+      for (const pm of pendingMedia) {
+        // Fetch blob from object URL and convert to File
+        try {
+          const resp = await fetch(pm.url);
+          const blob = await resp.blob();
+          const file = new File([blob], pm.name, { type: pm.type === 'image' ? 'image/jpeg' : 'video/mp4' });
+          files.push(file);
+        } catch { /* skip */ }
+      }
+      const uploaded = await uploadMedia(files);
+      mediaUrls = uploaded;
+      setUploading(false);
+    }
+
     const content = text.trim();
     const replyId = replyTo?.id ?? null;
     setText('');
     setReplyTo(null);
-    // Extract mentions
+    setPendingMedia(prev => { prev.forEach(p => URL.revokeObjectURL(p.url)); return []; });
+
     const mentionNames = [...content.matchAll(/@(\w+)/g)].map(m => m[1].toLowerCase());
     const mentionIds = Object.values(profiles)
       .filter(p => mentionNames.some(n => p.full_name.toLowerCase().startsWith(n)))
       .map(p => p.id);
+
     await supabase.from('messages').insert({
       trip_id: tripId, user_id: user.id, content,
       reply_to: replyId, mentions: mentionIds,
+      media_urls: mediaUrls.length > 0 ? mediaUrls : null,
     });
-    // Notify mentioned users
+
     for (const mid of mentionIds) {
       if (mid !== user.id) {
         await supabase.from('notifications').insert({
@@ -162,7 +249,6 @@ export function ChatPanel({ tripId }: { tripId: string }) {
     load();
   };
 
-  // Group messages by date
   const groups: { label: string; messages: EnrichedMessage[] }[] = [];
   for (const m of messages) {
     const label = dateLabel(m.created_at);
@@ -174,7 +260,22 @@ export function ChatPanel({ tripId }: { tripId: string }) {
   const typingNames = typingUsers.map(uid => profiles[uid]?.full_name?.split(' ')[0] ?? 'Someone');
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-stone-200 flex flex-col" style={{ height: '75vh' }}>
+    <div
+      ref={chatContainerRef}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`max-w-3xl mx-auto bg-white rounded-2xl border border-stone-200 flex flex-col relative transition-all ${dragOver ? 'ring-2 ring-teal-400 border-teal-400' : ''}`}
+      style={{ height: '75vh' }}
+    >
+      {/* Drag overlay */}
+      {dragOver && (
+        <div className="absolute inset-0 z-20 bg-teal-50/90 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center pointer-events-none">
+          <Upload className="w-10 h-10 text-teal-600 mb-2 animate-bounce" />
+          <p className="text-sm font-semibold text-teal-800">Drop images or videos here</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="px-5 py-3.5 border-b border-stone-100 flex items-center justify-between">
         <div>
@@ -229,17 +330,16 @@ export function ChatPanel({ tripId }: { tripId: string }) {
               const prevMsg = group.messages[idx - 1];
               const sameAuthor = prevMsg?.user_id === m.user_id && (new Date(m.created_at).getTime() - new Date(prevMsg.created_at).getTime()) < 60000;
               const p = isMe ? profile : m.profile ?? profiles[m.user_id];
-              // Group reactions
               const rxGroups: Record<string, { emoji: string; count: number; mine: boolean }> = {};
               for (const r of m.reactions ?? []) {
                 if (!rxGroups[r.emoji]) rxGroups[r.emoji] = { emoji: r.emoji, count: 0, mine: false };
                 rxGroups[r.emoji].count++;
                 if (r.user_id === user?.id) rxGroups[r.emoji].mine = true;
               }
+              const mediaList = m.media_urls?.filter(Boolean) ?? [];
 
               return (
                 <div key={m.id} className={`flex gap-2 group ${isMe ? 'justify-end' : 'justify-start'} ${sameAuthor ? 'mt-0.5' : 'mt-4'} animate-slide-in`}>
-                  {/* Avatar */}
                   {!isMe && !sameAuthor ? (
                     <div className="w-8 h-8 rounded-full bg-teal-900 text-amber-300 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-auto">
                       {(p?.full_name ?? '?').charAt(0).toUpperCase()}
@@ -247,7 +347,6 @@ export function ChatPanel({ tripId }: { tripId: string }) {
                   ) : !isMe ? <div className="w-8 flex-shrink-0" /> : null}
 
                   <div className={`max-w-[72%] ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
-                    {/* Author + time */}
                     {!isMe && !sameAuthor && (
                       <div className="flex items-baseline gap-2 mb-1 ml-1">
                         <span className="text-xs font-semibold text-teal-800">{p?.full_name ?? 'Member'}</span>
@@ -255,25 +354,50 @@ export function ChatPanel({ tripId }: { tripId: string }) {
                       </div>
                     )}
 
-                    {/* Reply preview */}
                     {m.replyMsg && (
-                      <div className={`mb-1 px-3 py-1.5 rounded-xl text-xs border-l-2 border-teal-400 bg-teal-50 text-stone-500 max-w-full`}>
+                      <div className="mb-1 px-3 py-1.5 rounded-xl text-xs border-l-2 border-teal-400 bg-teal-50 text-stone-500 max-w-full">
                         <span className="font-semibold text-teal-700">{profiles[m.replyMsg.user_id]?.full_name ?? 'Member'}: </span>
-                        {m.replyMsg.content.slice(0, 60)}{m.replyMsg.content.length > 60 ? '…' : ''}
+                        {m.replyMsg.content.slice(0, 60)}{m.replyMsg.content.length > 60 ? '...' : ''}
                       </div>
                     )}
 
-                    {/* Bubble */}
                     <div className="relative">
                       <div className={`relative px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${isMe ? 'bg-teal-900 text-stone-50 rounded-br-sm' : 'bg-stone-100 text-teal-950 rounded-bl-sm'}`}>
-                        {/* Mentions highlighted */}
-                        <span className="whitespace-pre-wrap">
-                          {m.content.split(/(@\w+)/).map((part, i) =>
-                            part.startsWith('@')
-                              ? <span key={i} className={`font-semibold ${isMe ? 'text-amber-300' : 'text-teal-700'}`}>{part}</span>
-                              : part
-                          )}
-                        </span>
+                        {/* Media display */}
+                        {mediaList.length > 0 && (
+                          <div className={`grid gap-1 mb-2 ${mediaList.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                            {mediaList.map((url, mi) => (
+                              <div key={mi} className="rounded-xl overflow-hidden">
+                                {isVideoUrl(url) ? (
+                                  <video
+                                    src={url}
+                                    controls
+                                    preload="metadata"
+                                    className="w-full max-h-60 object-cover rounded-xl"
+                                  />
+                                ) : (
+                                  <img
+                                    src={url}
+                                    alt=""
+                                    className="w-full max-h-60 object-cover rounded-xl cursor-pointer hover:opacity-90 transition"
+                                    onClick={() => window.open(url, '_blank')}
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Text content */}
+                        {m.content && (
+                          <span className="whitespace-pre-wrap">
+                            {m.content.split(/(@\w+)/).map((part, i) =>
+                              part.startsWith('@')
+                                ? <span key={i} className={`font-semibold ${isMe ? 'text-amber-300' : 'text-teal-700'}`}>{part}</span>
+                                : part
+                            )}
+                          </span>
+                        )}
                         {isMe && (
                           <span className="text-[10px] text-stone-300 ml-2 inline-block">{timeLabel(m.created_at)}</span>
                         )}
@@ -351,20 +475,79 @@ export function ChatPanel({ tripId }: { tripId: string }) {
         </div>
       )}
 
+      {/* Pending media preview */}
+      {pendingMedia.length > 0 && (
+        <div className="px-4 py-2 bg-stone-50 border-t border-stone-100">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {pendingMedia.map((pm, i) => (
+              <div key={i} className="relative flex-shrink-0 group">
+                {pm.type === 'image' ? (
+                  <img src={pm.url} alt="" className="w-16 h-16 object-cover rounded-lg border border-stone-200" />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg border border-stone-200 bg-stone-200 flex items-center justify-center">
+                    <Film className="w-6 h-6 text-stone-500" />
+                  </div>
+                )}
+                <button
+                  onClick={() => removePending(i)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+          {uploading && (
+            <div className="mt-1.5 h-1.5 bg-stone-200 rounded-full overflow-hidden">
+              <div className="h-full bg-teal-600 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Upload progress bar */}
+      {uploading && pendingMedia.length === 0 && (
+        <div className="px-4 py-1 bg-teal-50 border-t border-teal-100">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-teal-700 font-medium">Uploading...</span>
+            <div className="flex-1 h-1.5 bg-stone-200 rounded-full overflow-hidden">
+              <div className="h-full bg-teal-600 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+            </div>
+            <span className="text-xs text-teal-700 font-medium">{uploadProgress}%</span>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <form onSubmit={send} className="p-3 border-t border-stone-100 flex items-end gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_ALL}
+          multiple
+          className="hidden"
+          onChange={e => { if (e.target.files) processFiles(e.target.files); e.target.value = ''; }}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="w-9 h-9 rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-teal-700 flex items-center justify-center transition shrink-0"
+          title="Attach image or video"
+        >
+          <ImagePlus className="w-4 h-4" />
+        </button>
         <div className="flex-1 relative">
           <input
             value={text}
             onChange={e => handleInput(e.target.value)}
-            placeholder="Type a message… use @name to mention"
+            placeholder="Type a message... use @name to mention"
             className="w-full px-4 py-2.5 pr-10 bg-stone-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-teal-800 focus:bg-white transition"
           />
           <AtSign className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
         </div>
         <button
           type="submit"
-          disabled={!text.trim()}
+          disabled={(!text.trim() && pendingMedia.length === 0) || uploading}
           className="w-11 h-11 rounded-full bg-teal-900 text-stone-50 flex items-center justify-center hover:bg-teal-800 disabled:opacity-40 transition shrink-0"
         >
           <Send className="w-4 h-4" />

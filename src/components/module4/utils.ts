@@ -1,4 +1,5 @@
 import type { TravelerProfile, Profile, TripMember } from '../../lib/types';
+import { getCurrencySymbol } from '../../contexts/CurrencyContext';
 
 export type MemberRow = TripMember & { profile: Profile };
 
@@ -47,7 +48,7 @@ export function timeAgo(iso: string): string {
 }
 
 export function currencyFmt(amount: number, currency: string): string {
-  const sym = currency === 'INR' ? '\u20B9' : currency === 'USD' ? '$' : currency === 'EUR' ? '\u20AC' : currency === 'GBP' ? '\u00A3' : currency + ' ';
+  const sym = getCurrencySymbol(currency);
   return `${sym}${Number(amount || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 

@@ -25,7 +25,7 @@ export type UserProfile = {
   updated_at: string;
 };
 
-export type TripCategory = 'friends' | 'family' | 'college' | 'trekking' | 'corporate' | 'adventure';
+export type TripCategory = 'friends' | 'family' | 'college' | 'trekking' | 'corporate' | 'adventure' | 'other';
 
 export type Trip = {
   id: string;
@@ -275,6 +275,10 @@ export type Message = {
   trip_id: string;
   user_id: string;
   content: string;
+  media_urls?: string[];
+  reply_to?: string | null;
+  is_pinned?: boolean;
+  mentions?: string[];
   created_at: string;
   profile?: Profile;
 };

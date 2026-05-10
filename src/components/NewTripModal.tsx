@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { X, Loader2, Users, Mountain, Briefcase, GraduationCap, Home, Compass } from 'lucide-react';
+import { X, Loader2, Users, Mountain, Briefcase, GraduationCap, Home, Compass, PenLine } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import type { Group, TripCategory } from '../lib/types';
 
 type Props = {
@@ -17,13 +18,16 @@ const CATEGORIES: { value: TripCategory; label: string; icon: typeof Users; tint
   { value: 'trekking', label: 'Trekking', icon: Mountain, tint: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
   { value: 'corporate', label: 'Corporate', icon: Briefcase, tint: 'bg-slate-100 text-slate-800 border-slate-300' },
   { value: 'adventure', label: 'Adventure', icon: Compass, tint: 'bg-orange-100 text-orange-800 border-orange-300' },
+  { value: 'other', label: 'Other', icon: PenLine, tint: 'bg-teal-100 text-teal-800 border-teal-300' },
 ];
 
 export function NewTripModal({ onClose, onCreated, covers }: Props) {
   const { user } = useAuth();
+  const { setCurrency: setGlobalCurrency } = useCurrency();
   const [name, setName] = useState('');
   const [destination, setDestination] = useState('');
-  const [category, setCategory] = useState<TripCategory>('friends');
+  const [selectedCategories, setSelectedCategories] = useState<Set<TripCategory>>(new Set(['friends']));
+  const [customCategory, setCustomCategory] = useState('');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [budget, setBudget] = useState('1000');
@@ -45,9 +49,37 @@ export function NewTripModal({ onClose, onCreated, covers }: Props) {
     })();
   }, [user]);
 
+  const toggleCategory = (cat: TripCategory) => {
+    setSelectedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) {
+        next.delete(cat);
+      } else {
+        next.add(cat);
+      }
+      return next;
+    });
+  };
+
+  const buildCategoryString = (): string => {
+    const parts: string[] = [];
+    for (const cat of selectedCategories) {
+      if (cat === 'other') {
+        const trimmed = customCategory.trim();
+        if (trimmed) parts.push(trimmed);
+      } else {
+        parts.push(cat);
+      }
+    }
+    return parts.join(',');
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (selectedCategories.size === 0) { setErr('Select at least one trip type'); return; }
+    if (selectedCategories.has('other') && !customCategory.trim()) { setErr('Enter a custom trip type'); return; }
+
     setLoading(true); setErr(null);
     await supabase.from('profiles').upsert({
       id: user.id,
@@ -55,6 +87,8 @@ export function NewTripModal({ onClose, onCreated, covers }: Props) {
       full_name: (user.user_metadata?.full_name as string) ?? user.email ?? '',
       avatar_url: '',
     }, { onConflict: 'id', ignoreDuplicates: true });
+
+    const category = buildCategoryString();
     const { data, error } = await supabase.from('trips').insert({
       owner_id: user.id,
       group_id: groupId || null,
@@ -69,6 +103,7 @@ export function NewTripModal({ onClose, onCreated, covers }: Props) {
       status: 'planning',
     }).select().maybeSingle();
     if (error || !data) { setErr(error?.message ?? 'Failed'); setLoading(false); return; }
+    setGlobalCurrency(currency);
     await supabase.from('trip_members').insert({ trip_id: data.id, user_id: user.id, role: 'admin' });
 
     if (groupId) {
@@ -104,15 +139,33 @@ export function NewTripModal({ onClose, onCreated, covers }: Props) {
             <input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Kyoto, Japan" className="w-full px-4 py-2.5 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-800" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-2">Trip type</label>
+            <label className="block text-sm font-medium text-stone-700 mb-2">Trip type <span className="text-stone-400 font-normal">(select one or more)</span></label>
             <div className="grid grid-cols-3 gap-2">
-              {CATEGORIES.map(c => (
-                <button key={c.value} type="button" onClick={() => setCategory(c.value)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition ${category === c.value ? c.tint : 'border-stone-200 text-stone-500 hover:border-stone-300'}`}>
-                  <c.icon className="w-5 h-5" />
-                  <span className="text-xs font-medium">{c.label}</span>
-                </button>
-              ))}
+              {CATEGORIES.map(c => {
+                const active = selectedCategories.has(c.value);
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => toggleCategory(c.value)}
+                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition ${active ? c.tint : 'border-stone-200 text-stone-500 hover:border-stone-300'}`}
+                  >
+                    <c.icon className="w-5 h-5" />
+                    <span className="text-xs font-medium">{c.label}</span>
+                    {active && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
+                  </button>
+                );
+              })}
             </div>
+            {selectedCategories.has('other') && (
+              <input
+                value={customCategory}
+                onChange={e => setCustomCategory(e.target.value)}
+                placeholder="Enter your trip type (e.g. Pilgrimage, Wellness...)"
+                className="mt-2 w-full px-4 py-2.5 border border-teal-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-800 bg-teal-50 text-sm"
+                autoFocus
+              />
+            )}
           </div>
           {groups.length > 0 && (
             <div>
