@@ -48,7 +48,7 @@ export function FlagModal({ expense, onClose, onFlagged }: { expense: Expense; o
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-stone-200">
           <h3 className="font-display text-xl font-bold text-teal-950 flex items-center gap-2"><Flag className="w-5 h-5 text-amber-600" /> Flag expense</h3>
-          <button onClick={onClose} className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} aria-label="Close flag expense dialog" className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={submit} className="p-5 space-y-3">
           <div className="text-sm text-stone-600">Flagging <span className="font-semibold text-teal-950">"{expense.title}"</span></div>

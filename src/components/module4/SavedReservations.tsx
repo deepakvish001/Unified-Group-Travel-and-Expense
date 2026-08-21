@@ -205,9 +205,9 @@ export function SavedReservations({ tripId }: Props) {
                     </div>
                   )}
                   <div className="absolute top-2 right-2 flex gap-1">
-                    <button className="p-2 bg-white rounded-full hover:bg-red-50 transition">
+                    <span role="img" aria-label="Saved" className="p-2 bg-white rounded-full">
                       <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-                    </button>
+                    </span>
                   </div>
                 </div>
 

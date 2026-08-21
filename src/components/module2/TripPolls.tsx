@@ -285,7 +285,7 @@ function NewPollModal({ tripId, onClose, onCreated }: { tripId: string; onClose:
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-stone-200">
           <h3 className="font-display text-xl font-bold text-teal-950">New poll</h3>
-          <button onClick={onClose} className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} aria-label="Close new poll dialog" className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={submit} className="p-5 space-y-3 max-h-[80vh] overflow-y-auto">
           <input required autoFocus value={question} onChange={e => setQuestion(e.target.value)} placeholder="Poll question" className="w-full px-3 py-2 border border-stone-300 rounded-lg" />
