@@ -1,6 +1,6 @@
 // ADDED: Trip Wallet System - PRO Module 2
 import { useEffect, useState } from 'react';
-import { Wallet, Plus, Check, Target, TrendingUp, Users } from 'lucide-react';
+import { Wallet, Plus, Check, TrendingUp, Users } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Profile } from '../../lib/types';

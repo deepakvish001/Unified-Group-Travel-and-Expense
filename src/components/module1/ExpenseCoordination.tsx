@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Flag, AlertTriangle, MessageCircle, Loader2, Trash2, DollarSign } from 'lucide-react';
+import { Plus, Flag, AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { GroupExpense, ExpenseDispute, GroupMember } from '../../lib/types';
@@ -15,7 +15,6 @@ export function ExpenseCoordination({ groupId }: Props) {
   const [disputes, setDisputes] = useState<Record<string, ExpenseDispute>>({});
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -60,7 +59,7 @@ export function ExpenseCoordination({ groupId }: Props) {
 
   useEffect(() => { load(); }, [groupId]);
 
-  const shouldFlagExpense = (exp: GroupExpense): boolean => {
+  const shouldFlagExpense = (exp: Pick<GroupExpense, 'id' | 'amount' | 'category'>): boolean => {
     if (exp.amount > 5000) return true;
     const recentDuplicates = expenses.filter(
       e => e.category === exp.category &&
@@ -74,7 +73,7 @@ export function ExpenseCoordination({ groupId }: Props) {
     e.preventDefault();
     if (!user || !formData.title || !formData.amount) return;
 
-    const status = shouldFlagExpense({ ...formData, id: '', group_id: groupId, paid_by: user.id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as GroupExpense) ? 'flagged' : 'normal';
+    const status = shouldFlagExpense({ id: '', amount: Number(formData.amount), category: formData.category }) ? 'flagged' : 'normal';
 
     const { data: exp, error: err } = await supabase
       .from('expenses')

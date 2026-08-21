@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Plus, CheckCircle, Clock, AlertCircle, BarChart2, Trash2, Loader2 } from 'lucide-react';
+import { Plus, CheckCircle, Clock, BarChart2, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import type { Task, Poll, PollOption, GroupMember } from '../../lib/types';
+import type { Task, Poll, GroupMember } from '../../lib/types';
 
 type Props = {
   groupId: string;

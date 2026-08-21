@@ -1,6 +1,6 @@
 // ADDED: Route Optimization - PRO Module 3
 import { useEffect, useState } from 'react';
-import { Navigation, RefreshCw, Check, ArrowRight, Clock, Map, Zap } from 'lucide-react';
+import { Navigation, Check, ArrowRight, Clock, Map, Zap } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 

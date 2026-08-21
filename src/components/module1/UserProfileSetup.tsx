@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Phone, Heart, Utensils, Plane, Save, Loader2 } from 'lucide-react';
+import { User, Heart, Plane, Save, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { UserProfile } from '../../lib/types';

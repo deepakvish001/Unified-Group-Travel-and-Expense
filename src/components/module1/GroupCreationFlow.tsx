@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Users, DollarSign, Loader2, ArrowRight } from 'lucide-react';
+import { X, Users, Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 
