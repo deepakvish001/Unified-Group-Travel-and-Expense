@@ -170,7 +170,7 @@ export function BookingDetail({ booking, members, onClose, onChanged }: Props) {
             {!editing && <button onClick={() => setEditing(true)} className="p-1.5 hover:bg-white rounded-lg" title="Edit"><Edit3 className="w-4 h-4 text-stone-600" /></button>}
             {editing && <button onClick={saveEdit} disabled={saving} className="inline-flex items-center gap-1 bg-teal-900 text-stone-50 hover:bg-teal-800 px-2.5 py-1 rounded-lg text-xs">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}Save</button>}
             <button onClick={remove} className="p-1.5 hover:bg-white rounded-lg" title="Delete"><Trash2 className="w-4 h-4 text-red-600" /></button>
-            <button onClick={onClose} className="p-1.5 hover:bg-white rounded-lg"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} aria-label="Close booking details" className="p-1.5 hover:bg-white rounded-lg"><X className="w-5 h-5" /></button>
           </div>
         </div>
 

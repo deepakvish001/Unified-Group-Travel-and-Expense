@@ -78,7 +78,7 @@ export function GroupCreationFlow({ onClose, onCreated }: Props) {
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-stone-200 bg-gradient-to-r from-teal-900 to-teal-800">
           <h2 className="font-display text-2xl font-bold text-white">Create Travel Group</h2>
-          <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition text-white">
+          <button onClick={onClose} aria-label="Close create group dialog" className="p-1 hover:bg-white/20 rounded-lg transition text-white">
             <X className="w-6 h-6" />
           </button>
         </div>

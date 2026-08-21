@@ -127,7 +127,7 @@ export function NewTripModal({ onClose, onCreated, covers }: Props) {
       <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-stone-200">
           <h2 className="font-display text-xl font-bold text-teal-950">New trip</h2>
-          <button onClick={onClose} className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} aria-label="Close new trip dialog" className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={submit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
           <div>

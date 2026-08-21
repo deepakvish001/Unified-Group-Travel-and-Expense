@@ -251,7 +251,7 @@ function ActivityModal({ tripId, item, members, currency, onClose, onSaved, isNe
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-stone-200">
           <h3 className="font-display text-xl font-bold text-teal-950">{isNew ? 'New activity' : 'Edit activity'} · Day {form.day_number}</h3>
-          <button onClick={onClose} className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} aria-label="Close activity dialog" className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={save} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
           <input required autoFocus value={form.title} onChange={e => update('title', e.target.value)} placeholder="Activity title" className="w-full px-3 py-2 border border-stone-300 rounded-lg" />

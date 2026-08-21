@@ -177,7 +177,7 @@ export function CreateBookingWizard({ tripId, currency, members, onClose, onSave
               ))}
             </div>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} aria-label="Close booking wizard" className="p-1 hover:bg-stone-100 rounded-lg"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="p-5 overflow-y-auto flex-1">

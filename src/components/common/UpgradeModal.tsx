@@ -83,7 +83,7 @@ export function UpgradeModal({ tripId, requiredTier, featureName, onClose, onUpg
                 </h2>
               </div>
             </div>
-            <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-lg transition text-white/70 hover:text-white">
+            <button onClick={onClose} aria-label="Close upgrade dialog" className="p-1.5 hover:bg-white/20 rounded-lg transition text-white/70 hover:text-white">
               <X className="w-5 h-5" />
             </button>
           </div>

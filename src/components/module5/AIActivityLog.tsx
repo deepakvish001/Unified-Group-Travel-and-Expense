@@ -57,7 +57,7 @@ export function AIActivityLog({ tripId }: Props) {
           <h3 className="font-semibold text-stone-800">AI Activity Log</h3>
           <p className="text-xs text-stone-500">{logs.length} total AI actions for this trip</p>
         </div>
-        <button onClick={load} disabled={loading} className="p-2 text-stone-400 hover:text-stone-700 transition rounded-xl hover:bg-stone-100">
+        <button onClick={load} disabled={loading} aria-label="Refresh activity log" className="p-2 text-stone-400 hover:text-stone-700 transition rounded-xl hover:bg-stone-100">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>

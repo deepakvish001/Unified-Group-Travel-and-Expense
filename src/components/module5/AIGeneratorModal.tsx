@@ -143,7 +143,7 @@ export function AIGeneratorModal({ trip, onClose, onApplied }: Props) {
               <p className="text-xs text-stone-500">{genCount}/3 generations used</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-stone-400 hover:text-stone-600 transition rounded-xl hover:bg-stone-100">
+          <button onClick={onClose} aria-label="Close AI generator dialog" className="p-2 text-stone-400 hover:text-stone-600 transition rounded-xl hover:bg-stone-100">
             <X className="w-5 h-5" />
           </button>
         </div>
