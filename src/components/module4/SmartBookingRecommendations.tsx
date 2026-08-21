@@ -1,6 +1,6 @@
 // ADDED: Smart Booking Recommendations - PRO Module 3
 import { useEffect, useState } from 'react';
-import { Star, Plus, Check, X, ExternalLink, Hotel, Plane, Utensils, Car, Ticket, Sparkles, RefreshCw } from 'lucide-react';
+import { Star, Plus, Check, X, ExternalLink, Hotel, Plane, Utensils, Car, Ticket, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Trip } from '../../lib/types';

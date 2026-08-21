@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Users, Download, Loader2, CheckCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import type { TravelerVault, UserProfile, GroupMember } from '../../lib/types';
+import type { TravelerVault, UserProfile } from '../../lib/types';
 
 type Props = {
   groupId: string;
@@ -11,7 +11,6 @@ type Props = {
 export function TravelerVault({ groupId }: Props) {
   const { user } = useAuth();
   const [travelers, setTravelers] = useState<TravelerVault[]>([]);
-  const [members, setMembers] = useState<GroupMember[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -20,9 +19,6 @@ export function TravelerVault({ groupId }: Props) {
     try {
       const { data: t } = await supabase.from('traveler_vault').select('*').eq('group_id', groupId);
       setTravelers(t ?? []);
-
-      const { data: m } = await supabase.from('group_members').select('*').eq('group_id', groupId);
-      setMembers(m ?? []);
 
       if (user) {
         const { data: up } = await supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle();

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Calendar, MapPin, Users, Wallet, Map, Plane, Sparkles, MessageCircle, Kanban, Vote, Activity, Crown, Navigation } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Wallet, Map as MapIcon, Plane, Sparkles, MessageCircle, Kanban, Vote, Activity, Crown, Navigation } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -98,8 +98,8 @@ export function TripDetail({ tripId, onBack }: Props) {
     );
   }
 
-  const tabs: { id: Tab; label: string; icon: typeof Map }[] = [
-    { id: 'itinerary', label: 'Itinerary', icon: Map },
+  const tabs: { id: Tab; label: string; icon: typeof MapIcon }[] = [
+    { id: 'itinerary', label: 'Itinerary', icon: MapIcon },
     { id: 'tasks', label: 'Tasks', icon: Kanban },
     { id: 'polls', label: 'Polls', icon: Vote },
     { id: 'timeline', label: 'Timeline', icon: Activity },

@@ -100,7 +100,9 @@ export function TripPolls({ tripId }: { tripId: string }) {
       const opt = options.find(o => o.id === optionId);
       await supabase.from('trip_activity_logs').insert({
         trip_id: tripId, actor_id: user.id, action_type: 'poll_voted',
-        description: `voted in poll "${poll.question}"`,
+        description: opt
+          ? `voted "${opt.option_text}" in poll "${poll.question}"`
+          : `voted in poll "${poll.question}"`,
         related_entity_type: 'trip_poll', related_entity_id: poll.id,
       });
     }

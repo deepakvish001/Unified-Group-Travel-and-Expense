@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Settings, LogOut, MoreVertical, Trash2, Link2, Copy, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Users, LogOut, Trash2, Link2, Copy, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Group, GroupMember, GroupInvite, Settlement } from '../../lib/types';
@@ -25,7 +25,6 @@ export function GroupManagement({ groupId, onBack }: Props) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
-  const [showInviteForm, setShowInviteForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isAdmin = members.some(m => m.user_id === user?.id && m.role === 'admin');
@@ -167,12 +166,37 @@ export function GroupManagement({ groupId, onBack }: Props) {
               <div key={m.id} className="flex items-center gap-4 p-3 bg-stone-50 rounded-xl">
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-teal-950 text-sm">{m.user_id}</div>
-                  <div className="text-xs text-stone-500 mt-0.5">Role: {m.role}</div>
+                  {isAdmin && m.user_id !== user?.id ? (
+                    <select
+                      value={m.role}
+                      onChange={(e) => updateRole(m.id, e.target.value)}
+                      className="mt-0.5 text-xs text-stone-600 bg-white border border-stone-200 rounded px-1.5 py-0.5"
+                    >
+                      <option value="member">member</option>
+                      <option value="finance_manager">finance_manager</option>
+                      <option value="admin">admin</option>
+                    </select>
+                  ) : (
+                    <div className="text-xs text-stone-500 mt-0.5">Role: {m.role}</div>
+                  )}
                 </div>
-                {m.responsibility && (
-                  <div className="text-xs bg-amber-100 text-amber-900 px-2 py-1 rounded-full font-medium">
-                    {RESPONSIBILITIES.find(r => r.id === m.responsibility)?.label}
-                  </div>
+                {isAdmin && m.user_id !== user?.id ? (
+                  <select
+                    value={m.responsibility ?? ''}
+                    onChange={(e) => updateResponsibility(m.id, e.target.value || null)}
+                    className="text-xs bg-amber-50 text-amber-900 border border-amber-200 rounded-full px-2 py-1 font-medium"
+                  >
+                    <option value="">No responsibility</option>
+                    {RESPONSIBILITIES.map(r => (
+                      <option key={r.id} value={r.id}>{r.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  m.responsibility && (
+                    <div className="text-xs bg-amber-100 text-amber-900 px-2 py-1 rounded-full font-medium">
+                      {RESPONSIBILITIES.find(r => r.id === m.responsibility)?.label}
+                    </div>
+                  )
                 )}
                 {isAdmin && m.user_id !== user?.id && (
                   <button
